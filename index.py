@@ -11,12 +11,15 @@ class UrbanSoundDataset(Dataset):
                  audio_dir, 
                  transformation, 
                  target_sample_rate, 
-                 num_samples): 
+                 num_samples, 
+                 device): 
         self.annotations = pd.read_csv(annotations_file)
         self.audio_dir = audio_dir 
-        self.transformation = transformation
+        self.device = device
+        self.transformation = transformation.to(self.device)
         self.target_sample_rate = target_sample_rate
-        self.num_samples = num_samples
+        self.num_samples = num_samples 
+        
 
     def __len__(self): 
         return len(self.annotations) 
@@ -28,6 +31,7 @@ class UrbanSoundDataset(Dataset):
         signal, sr = torchaudio.load(audio_sample_path, backend="soundfile") 
         # signal -> (num_channels, samples) -> (2, 1600)
         signal = self._resample_if_necessary(signal, sr)
+        signal = signal.to(device)
         signal = self._mix_down_if_necessary(signal) #(1, 1600)  
         signal = self._right_pad_if_necessary(signal)
         signal = self._cut_if_necessary(signal)
@@ -78,11 +82,15 @@ if __name__ == "__main__":
         hop_length=512, 
         n_mels=64
     )
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     usd = UrbanSoundDataset(ANNOTATIONS_FILE, 
                             AUDIO_DIR, 
                             mel_spectrogram, 
                             SAMPLE_RATE, 
-                            NUM_SAMPLES)
+                            NUM_SAMPLES, 
+                            device)
     print(f"There are {len(usd)} samples in the dataset.") 
 
     signal, label = usd[10] 
