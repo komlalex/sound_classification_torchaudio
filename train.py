@@ -1,6 +1,7 @@
 import torch 
 import torchaudio
 from torch import nn 
+import torch.nn.functional as F
 from torch.utils.data import DataLoader 
 from urbandataset import UrbanSoundDataset  
 from cnn import CNNNetwork
@@ -17,7 +18,7 @@ mel_spectrogram = torchaudio.transforms.MelSpectrogram(
         sample_rate=SAMPLE_RATE, 
         n_fft= 1024, 
         hop_length=512, 
-        n_mels=64
+        n_mels=64 
     )
 
 usd = UrbanSoundDataset(ANNOTATIONS_FILE, 
@@ -27,7 +28,7 @@ usd = UrbanSoundDataset(ANNOTATIONS_FILE,
                             NUM_SAMPLES, 
                             device)  
 
-train_dl = DataLoader(usd, batch_size=BATCH_SIZE, shuffle=True) 
+train_dl = DataLoader(usd, batch_size=BATCH_SIZE) 
 #print(usd[0])
 
 """Construct model and assign it to device""" 
@@ -45,9 +46,9 @@ def train_one_epoch(model: nn.Module, train_dl, loss_fn, optimizer: torch.optim.
     accs = []
     for inputs, labels in train_dl: 
         preds = model(inputs) 
-        loss = loss_fn(preds.cuda(), labels.cuda()) 
+        loss = F.cross_entropy(preds, labels) 
         losses.append(loss)
-        acc = accuracy(preds.cuda(), labels.cuda())
+        acc = accuracy(preds, labels)
         accs.append(acc)
         loss.backward() 
         optimizer.step() 
@@ -55,7 +56,7 @@ def train_one_epoch(model: nn.Module, train_dl, loss_fn, optimizer: torch.optim.
 
     epoch_loss = torch.stack(losses).mean().item() 
     epoch_acc = torch.stack(accs).mean().item()
-    print(f"\33[33m loss: {epoch_loss} | accuracy: {epoch_acc}")
+    print(f"\33[33m loss: {epoch_loss:.4f} | accuracy: {epoch_acc:.4f}")
         
 
 def train(model, train_dl, loss_fn, optimizer, epochs): 
