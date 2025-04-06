@@ -33,7 +33,7 @@ class UrbanSoundDataset(Dataset):
         signal, sr = torchaudio.load(audio_sample_path, backend="soundfile") 
         # signal -> (num_channels, samples) -> (2, 1600)
         signal = self._resample_if_necessary(signal, sr)
-        signal = signal.to(device)
+        signal = signal.to(self.device)
         signal = self._mix_down_if_necessary(signal) #(1, 1600)  
         signal = self._right_pad_if_necessary(signal)
         signal = self._cut_if_necessary(signal)
@@ -163,4 +163,6 @@ class CNNNetwork(nn.Module):
 
 if __name__ == "__main__": 
     cnn = CNNNetwork().to(device)
-    summary(cnn, (1, 64, 44))
+    summary(cnn, (1, 64, 44))  
+
+
